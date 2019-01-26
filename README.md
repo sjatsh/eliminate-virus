@@ -1,6 +1,7 @@
 # eliminate virus cheating tool
+
 wechat mini game eliminate virus cheating tool
-![](http://static.1sapp.com/simage_template/40b52b6d14a51b25a996d2c3c16f3e3af375a907.png)
+![](http://static.1sapp.com/simage_template/870f37ed9baa8f026e6311a521297faef64fe0b7.png)
 
 ## Use Charles get user openid 
 
