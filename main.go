@@ -104,22 +104,22 @@ func main() {
 	reqMap["wx_appid"] = appId
 	reqMap["wx_secret"] = secret
 
-	reqkeys := make([]string, 0, len(reqMap))
+	reqKeys := make([]string, 0, len(reqMap))
 	for key := range reqMap {
 		if key == "sign" {
 			continue
 		}
-		reqkeys = append(reqkeys, key)
+		reqKeys = append(reqKeys, key)
 	}
-	sort.Strings(reqkeys)
+	sort.Strings(reqKeys)
 
 	reqSignEle := make([]string, 0)
-	for i, j := 0, len(reqkeys); i < j; i++ {
-		reqSignEle = append(reqSignEle, reqkeys[i]+"="+fmt.Sprintf("%v", reqMap[reqkeys[i]]))
+	for i, j := 0, len(reqKeys); i < j; i++ {
+		reqSignEle = append(reqSignEle, reqKeys[i]+"="+fmt.Sprintf("%v", reqMap[reqKeys[i]]))
 	}
-	reqbs := md5.Sum(bytes.NewBufferString(strings.Join(reqSignEle, "&")).Bytes())
-	reqms := strings.ToLower(hex.EncodeToString(reqbs[:]))
-	reqMap["sign"] = reqms
+	reqBS := md5.Sum(bytes.NewBufferString(strings.Join(reqSignEle, "&")).Bytes())
+	reqMS := strings.ToLower(hex.EncodeToString(reqBS[:]))
+	reqMap["sign"] = reqMS
 	delete(reqMap, "wx_appid")
 	delete(reqMap, "wx_secret")
 
