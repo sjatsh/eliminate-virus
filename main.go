@@ -17,84 +17,64 @@ import (
 
 var secret = "8fbd540d0b23197df1d5095f0d6ee46d"
 var appId = "wxa2c324b63b2a9e5e"
+var gameUrl = "https://wxwyjh.chiji-h5.com"
+var m int64 = 1000000
+
+type RespData struct {
+	Data map[string]interface{} `json:"data"`
+	Code int                    `json:"code"`
+}
 
 func main() {
 
-	coin := flag.String("coin", "99999999999", "金币数")
-	zuanShi := flag.Int("zuanshi", 99999999999, "钻石数量")
-	openID := flag.String("open_id", "", "open_id")
-	isSoundOff := flag.Bool("sound_off", false, "true:关闭音乐,false:开启音乐")
-	level := flag.Int("level", 200, "关卡等级")
-	lDamage := flag.Int("damage", 999, "主武器火力等级")
-	lCount := flag.Int("count", 356, "主武器射速")
-	levelFuCountStr := flag.String("levelFuCount", "[32,32,32,32,32,32,32,1,1,1]", "副武器强度，更改强度需要先删除本地小程序")
-	levelFuDamageStr := flag.String("levelFuDamage", "[999,999,999,999,999,999,999,1,1,1]", "副武器火力")
-	jiazhi := flag.Int("jiazhi", 999, "金币价值等级")
-	richang := flag.Int("richang", 999, "日常收益等级")
-	tili := flag.Int("tili", 100, "体力值")
-	playCount := flag.Int("playCount", 1, "游戏次数")
-	shareCount := flag.Int("shareCount", 1, "分享次数")
-	videoCount := flag.Int("videoCount", 1, "广告观看次数")
+	coin := flag.Int64("coin", 0, "金币数")
+	zuanShi := flag.Int64("zuanShi", 0, "钻石数量")
+	tiLi := flag.Int64("tiLi", 0, "体力值")
+	openID := flag.String("open_id", "oc6rl5U6hT5qv-ItIO6sTl_rTIj8", "open_id")
 	flag.Parse()
 
-	levelFuCount := make([]int, 0)
-	if err := json.Unmarshal([]byte(*levelFuCountStr), &levelFuCount); err != nil {
-		log.Fatalf("副武器强度配置有误:%s", err)
+	if "" == *openID || (0 == *zuanShi && 0 == *coin && 0 == *tiLi) {
+		log.Fatal("用户id为空")
 	}
-	levelFuDamage := make([]int, 0)
-	if err := json.Unmarshal([]byte(*levelFuDamageStr), &levelFuDamage); err != nil {
-		log.Fatalf("副武器火力配置有误:%s", err)
+	getResultMap := new(RespData)
+
+	getReqMap := make(map[string]interface{})
+	getReqMap["plat"] = "wx"
+	getReqMap["time"] = time.Now().UnixNano() / 1e6
+	getReqMap["openid"] = *openID
+	getReqMap["wx_appid"] = appId
+	getReqMap["wx_secret"] = secret
+	getReqMap["sign"] = SignMap(getReqMap)
+	delete(getReqMap, "wx_appid")
+	delete(getReqMap, "wx_secret")
+
+	getReqData, _ := json.Marshal(getReqMap)
+
+	if err := PostWxGame("/api/archive/get", getReqData, getResultMap); err != nil {
+		log.Fatal(err)
+	}
+	if getResultMap.Code != 0 {
+		log.Fatal("获取用户信息失败")
 	}
 
+	recordStr := getResultMap.Data["record"]
 	recordMap := make(map[string]interface{})
-	recordMap["uid"] = *openID
-	recordMap["isSoundOff"] = *isSoundOff
-	recordMap["level"] = *level
-	recordMap["lDamage"] = *lDamage
-	recordMap["lCount"] = *lCount
-	recordMap["lJiaZhi"] = *jiazhi
-	recordMap["lRiChang"] = *richang
-	recordMap["curFu"] = 2
-	recordMap["levelFuCount"] = levelFuCount
-	recordMap["levelFuDamage"] = levelFuDamage
-	recordMap["getTime"] = "26,12,23,51"
-	recordMap["bgIndex"] = 1
-	recordMap["money"] = *coin
-	recordMap["tipFU"] = false
-	recordMap["isGuide"] = false
-	recordMap["tiLi"] = *tili
-	recordMap["tiLiBackTime"] = 65365793
-	recordMap["today"] = time.Now().Day()
-	recordMap["playCount"] = *playCount
-	recordMap["shareCount"] = *shareCount
-	recordMap["videoCount"] = *videoCount
-	recordMap["isGuanZhu"] = true
-	recordMap["isShouCang"] = true
-	recordMap["tryFuCount"] = 0
-	recordMap["pos"] = ""
-	recordMap["posUpdate"] = 0
-	recordMap["zuanShi"] = *zuanShi
-
-	// 取出所有的键，并排序
-	keys := make([]string, 0, len(recordMap))
-	for key := range recordMap {
-		if key == "sign" {
-			continue
-		}
-		keys = append(keys, key)
+	if err := json.Unmarshal([]byte(fmt.Sprintf("%v", recordStr)), &recordMap); err != nil {
+		log.Fatal(err)
 	}
-	sort.Strings(keys)
-
-	// 拼接参数
-	ignS := ""
-	for i, j := 0, len(keys); i < j; i++ {
-		ignS += fmt.Sprintf("%v", recordMap[keys[i]])
+	if *coin > 0 {
+		recordMap["money"] = fmt.Sprintf("%d", *coin*m)
 	}
-	bs := md5.Sum(bytes.NewBufferString(ignS).Bytes())
-	ms := strings.ToLower(hex.EncodeToString(bs[:]))
-	recordMap["sign"] = ms
-
+	if *zuanShi > 0 {
+		recordMap["zuanShi"] = *zuanShi * m
+	}
+	if *tiLi > 0 {
+		recordMap["tiLi"] = 999 * m
+	}
+	recordMap["sign"] = SignDataMap(recordMap)
 	recordJsonStr, _ := json.Marshal(recordMap)
+
+	fmt.Println(string(recordJsonStr))
 
 	reqMap := make(map[string]interface{})
 	reqMap["plat"] = "wx"
@@ -103,47 +83,70 @@ func main() {
 	reqMap["openid"] = *openID
 	reqMap["wx_appid"] = appId
 	reqMap["wx_secret"] = secret
+	reqMap["sign"] = SignMap(reqMap)
 
-	reqKeys := make([]string, 0, len(reqMap))
-	for key := range reqMap {
-		if key == "sign" {
-			continue
+	delete(reqMap, "wx_appid")
+	delete(reqMap, "wx_secret")
+	reqData, _ := json.Marshal(reqMap)
+
+	fmt.Println(string(reqData))
+
+	uploadResult := new(RespData)
+	if err := PostWxGame("/api/archive/upload", reqData, uploadResult); err != nil {
+		log.Fatal(err)
+	}
+	if uploadResult.Code == 0 {
+		fmt.Println("更新用户信息成功")
+	} else {
+		fmt.Printf("刷新数据失败,%v", uploadResult)
+	}
+}
+
+func PostWxGame(uri string, req []byte, respModel interface{}) error {
+	resp, err := http.Post(gameUrl+uri, "application/json", bytes.NewReader(req))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+
+	if respModel != nil {
+		if err := json.Unmarshal(body, respModel); err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+func SignMap(dataMap map[string]interface{}) string {
+	reqKeys := make([]string, 0, len(dataMap))
+	for key := range dataMap {
 		reqKeys = append(reqKeys, key)
 	}
 	sort.Strings(reqKeys)
 
 	reqSignEle := make([]string, 0)
 	for i, j := 0, len(reqKeys); i < j; i++ {
-		reqSignEle = append(reqSignEle, reqKeys[i]+"="+fmt.Sprintf("%v", reqMap[reqKeys[i]]))
+		reqSignEle = append(reqSignEle, reqKeys[i]+"="+fmt.Sprintf("%v", dataMap[reqKeys[i]]))
 	}
 	reqBS := md5.Sum(bytes.NewBufferString(strings.Join(reqSignEle, "&")).Bytes())
-	reqMS := strings.ToLower(hex.EncodeToString(reqBS[:]))
-	reqMap["sign"] = reqMS
-	delete(reqMap, "wx_appid")
-	delete(reqMap, "wx_secret")
+	return strings.ToLower(hex.EncodeToString(reqBS[:]))
+}
 
-	reqData, _ := json.Marshal(reqMap)
-
-	fmt.Printf("req string: %s\n", string(reqData))
-	resp, err := http.Post("https://wxwyjh.chiji-h5.com/api/archive/upload", "application/json", bytes.NewReader(reqData))
-	if err != nil {
-		log.Fatal(err)
+func SignDataMap(dataMap map[string]interface{}) string {
+	// 取出所有的键，并排序
+	keys := make([]string, 0, len(dataMap))
+	for key := range dataMap {
+		keys = append(keys, key)
 	}
-	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	sort.Strings(keys)
 
-	result := struct {
-		Data map[string]interface{} `json:"data"`
-		Code int                    `json:"code"`
-	}{}
-	if err := json.Unmarshal(body, &result); err != nil {
-		log.Fatal(err)
+	// 拼接参数
+	ignS := ""
+	for i, j := 0, len(keys); i < j; i++ {
+		ignS += fmt.Sprintf("%v", dataMap[keys[i]])
 	}
-	if result.Code == 0 {
-		fmt.Println("刷新成功")
-	} else {
-		fmt.Printf("刷新数据失败,%v", result)
-	}
-
+	bs := md5.Sum(bytes.NewBufferString(ignS).Bytes())
+	return strings.ToLower(hex.EncodeToString(bs[:]))
 }
