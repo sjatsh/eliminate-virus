@@ -30,7 +30,7 @@ func main() {
 	coin := flag.Int64("coin", 0, "金币数")
 	zuanShi := flag.Int64("zuanShi", 0, "钻石数量")
 	tiLi := flag.Int64("tiLi", 0, "体力值")
-	openID := flag.String("open_id", "oc6rl5U6hT5qv-ItIO6sTl_rTIj8", "open_id")
+	openID := flag.String("open_id", "", "open_id")
 	flag.Parse()
 
 	if "" == *openID || (0 == *zuanShi && 0 == *coin && 0 == *tiLi) {
