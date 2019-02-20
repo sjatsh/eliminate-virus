@@ -5,16 +5,17 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
 
+var sp = "xuehua5201314"
 var secret = "8fbd540d0b23197df1d5095f0d6ee46d"
 var appId = "wxa2c324b63b2a9e5e"
 var gameUrl = "https://wxwyjh.chiji-h5.com"
@@ -26,24 +27,66 @@ type RespData struct {
 }
 
 func main() {
-
-	p := flag.Int64("p", 0, "选择套餐")
-	level := flag.Int("l", 0, "关卡等级")
-	openID := flag.String("id", "", "open_id")
-	flag.Parse()
-
-	if "" == *openID {
-		log.Fatal("请填写用户id")
+	http.HandleFunc("/upload", UploadHandler)
+	err := http.ListenAndServe(":8888", nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
 	}
-	if *p == 8 && *level <= 0 {
-		log.Fatal("请填写关卡等级")
+}
+
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
+
+	if err := r.ParseForm(); err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	var err error
+	var p int64
+	var level int64
+
+	openID := r.Form.Get("id")
+	pStr := r.Form.Get("p")
+	levelStr := r.Form.Get("l")
+	spReq := r.Form.Get("sp")
+	if spReq != sp {
+		w.Write([]byte("签名错误"))
+		return
+	}
+
+	if pStr != "" {
+		p, err = strconv.ParseInt(pStr, 10, 64)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return
+		}
+		if p <= 0 {
+			w.Write([]byte("请选择对应套餐"))
+			return
+		}
+	}
+
+	if levelStr != "" {
+		level, err = strconv.ParseInt(levelStr, 10, 64)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return
+		}
+	}
+
+	if "" == openID {
+		w.Write([]byte("请填写用户id"))
+		return
+	}
+	if 8 == p && level <= 0 {
+		w.Write([]byte("请填写关卡等级"))
+		return
 	}
 	getResultMap := new(RespData)
 
 	getReqMap := make(map[string]interface{})
 	getReqMap["plat"] = "wx"
 	getReqMap["time"] = time.Now().UnixNano() / 1e6
-	getReqMap["openid"] = *openID
+	getReqMap["openid"] = openID
 	getReqMap["wx_appid"] = appId
 	getReqMap["wx_secret"] = secret
 	getReqMap["sign"] = SignMap(getReqMap)
@@ -53,23 +96,25 @@ func main() {
 	getReqData, _ := json.Marshal(getReqMap)
 
 	if err := PostWxGame("/api/archive/get", getReqData, getResultMap); err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 	if getResultMap.Code != 0 {
-		log.Fatal("获取用户信息失败")
+		log.Println("获取用户信息失败")
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	recordStr := getResultMap.Data["record"]
 	recordMap := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(fmt.Sprintf("%v", recordStr)), &recordMap); err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
-	if *p <= 0 {
-		log.Fatal("请选择对应套餐")
-	}
-
-	switch *p {
+	switch p {
 	//套餐1: 主武器满级+金币收益满级18元
 	case 1:
 		recordMap["lDamage"] = 999
@@ -103,9 +148,9 @@ func main() {
 		recordMap["level"] = 1
 	// 套餐8: 任意调整关卡等级, 5元
 	case 8:
-		recordMap["level"] = *level
+		recordMap["level"] = level
 	default:
-		log.Fatal("请选择正确的套餐")
+		log.Println("请选择正确的套餐")
 	}
 
 	recordMap["sign"] = SignDataMap(recordMap)
@@ -117,7 +162,7 @@ func main() {
 	reqMap["plat"] = "wx"
 	reqMap["record"] = string(recordJsonStr)
 	reqMap["time"] = time.Now().UnixNano() / 1e6
-	reqMap["openid"] = *openID
+	reqMap["openid"] = openID
 	reqMap["wx_appid"] = appId
 	reqMap["wx_secret"] = secret
 	reqMap["sign"] = SignMap(reqMap)
@@ -130,12 +175,16 @@ func main() {
 
 	uploadResult := new(RespData)
 	if err := PostWxGame("/api/archive/upload", reqData, uploadResult); err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		w.Write([]byte(err.Error()))
+		return
 	}
 	if uploadResult.Code == 0 {
 		fmt.Println("更新用户信息成功")
+		w.Write([]byte("success"))
 	} else {
 		fmt.Printf("刷新数据失败,%v", uploadResult)
+		w.Write([]byte(fmt.Sprintf("%v", uploadResult)))
 	}
 }
 
