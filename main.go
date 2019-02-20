@@ -28,11 +28,15 @@ type RespData struct {
 func main() {
 
 	p := flag.Int64("p", 0, "选择套餐")
+	level := flag.Int("level", 0, "关卡等级")
 	openID := flag.String("id", "", "open_id")
 	flag.Parse()
 
 	if "" == *openID {
 		log.Fatal("请填写用户id")
+	}
+	if *p == 8 && *level <= 0 {
+		log.Fatal("请填写关卡等级")
 	}
 	getResultMap := new(RespData)
 
@@ -97,6 +101,9 @@ func main() {
 		recordMap["levelFuCount"] = "[1,1,1,1,1,1,1,1,1,1]"
 		recordMap["levelFuDamage"] = "[1,1,1,1,1,1,1,1,1,1]"
 		recordMap["level"] = 1
+	// 套餐8: 任意调整关卡等级, 5元
+	case 8:
+		recordMap["level"] = *level
 	default:
 		log.Fatal("请选择正确的套餐")
 	}
