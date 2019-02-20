@@ -27,14 +27,12 @@ type RespData struct {
 
 func main() {
 
-	coin := flag.Int64("coin", 0, "金币数")
-	zuanShi := flag.Int64("zuanShi", 0, "钻石数量")
-	tiLi := flag.Int64("tiLi", 0, "体力值")
-	openID := flag.String("open_id", "", "open_id")
+	p := flag.Int64("p", 0, "选择套餐")
+	openID := flag.String("id", "", "open_id")
 	flag.Parse()
 
-	if "" == *openID || (0 == *zuanShi && 0 == *coin && 0 == *tiLi) {
-		log.Fatal("用户id为空")
+	if "" == *openID {
+		log.Fatal("请填写用户id")
 	}
 	getResultMap := new(RespData)
 
@@ -62,15 +60,47 @@ func main() {
 	if err := json.Unmarshal([]byte(fmt.Sprintf("%v", recordStr)), &recordMap); err != nil {
 		log.Fatal(err)
 	}
-	if *coin > 0 {
-		recordMap["money"] = fmt.Sprintf("%d", *coin*m)
+
+	if *p <= 0 {
+		log.Fatal("请选择对应套餐")
 	}
-	if *zuanShi > 0 {
-		recordMap["zuanShi"] = *zuanShi * m
-	}
-	if *tiLi > 0 {
+
+	switch *p {
+	//套餐1: 主武器满级+金币收益满级18元
+	case 1:
+		recordMap["lDamage"] = 999
+		recordMap["lCount"] = 356
+		recordMap["lJiaZhi"] = 999
+		recordMap["lRiChang"] = 999
+	case 2:
+		// 套餐2: 七个副武器满级打包30元
+		recordMap["levelFuCount"] = "[32,32,32,32,32,32,32,1,1,1]"
+		recordMap["levelFuDamage"] = "[999,999,999,999,999,999,999,1,1,1]"
+	case 3:
+		// 套餐3: 无限体力18元
 		recordMap["tiLi"] = 999 * m
+	case 4:
+		// 套餐4: 无线钻石18元（需要自己一个个兑换金币）
+		recordMap["zuanShi"] = 999999999 * m
+	case 5:
+		// 套餐5: 无限金币24元（武器全部升级满级用不完）
+		recordMap["money"] = 999999999 * m
+	case 6:
+		// 套餐5: 无限金币、钻石、体力（可以自己升级体验游戏乐趣）
+		recordMap["money"] = 999999999 * m
+		recordMap["zuanShi"] = 999999999 * m
+		recordMap["tiLi"] = 999 * m
+	case 7:
+		// 套餐7: 武器、副武器、关卡等级清至1级, 8元
+		recordMap["lDamage"] = 1
+		recordMap["lCount"] = 1
+		recordMap["levelFuCount"] = "[1,1,1,1,1,1,1,1,1,1]"
+		recordMap["levelFuDamage"] = "[1,1,1,1,1,1,1,1,1,1]"
+		recordMap["level"] = 1
+	default:
+		log.Fatal("请选择正确的套餐")
 	}
+
 	recordMap["sign"] = SignDataMap(recordMap)
 	recordJsonStr, _ := json.Marshal(recordMap)
 
