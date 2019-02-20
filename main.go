@@ -28,7 +28,7 @@ type RespData struct {
 func main() {
 
 	p := flag.Int64("p", 0, "选择套餐")
-	level := flag.Int("level", 0, "关卡等级")
+	level := flag.Int("l", 0, "关卡等级")
 	openID := flag.String("id", "", "open_id")
 	flag.Parse()
 
