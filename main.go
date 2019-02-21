@@ -133,10 +133,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		recordMap["zuanShi"] = 999999999 * m
 	case 5:
 		// 套餐5: 无限金币24元（武器全部升级满级用不完）
-		recordMap["money"] = 999999999 * m
+		recordMap["money"] = fmt.Sprintf("%d", 999999999*m)
 	case 6:
 		// 套餐5: 无限金币、钻石、体力（可以自己升级体验游戏乐趣）
-		recordMap["money"] = 999999999 * m
+		recordMap["money"] = fmt.Sprintf("%d", 999999999*m)
 		recordMap["zuanShi"] = 999999999 * m
 		recordMap["tiLi"] = 999 * m
 	case 7:
