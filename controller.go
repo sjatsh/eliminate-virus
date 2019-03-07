@@ -1,12 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 var m int64 = 999999999999999999
@@ -59,69 +58,14 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("请填写关卡等级"))
 		return
 	}
-	getResultMap := new(RespData)
 
-	getReqMap := make(map[string]interface{})
-	getReqMap["plat"] = "wx"
-	getReqMap["time"] = time.Now().UnixNano() / 1e6
-	getReqMap["openid"] = openID
-	getReqMap["wx_appid"] = appId
-	getReqMap["wx_secret"] = secret
-	getReqMap["sign"] = SignMap(getReqMap)
-	delete(getReqMap, "wx_appid")
-	delete(getReqMap, "wx_secret")
-
-	getReqData, _ := json.Marshal(getReqMap)
-
-	if err := PostWxGame("/api/archive/get", getReqData, getResultMap); err != nil {
-		log.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
-	if getResultMap.Code != 0 {
-		log.Println("获取用户信息失败")
-		w.Write([]byte(err.Error()))
+	uploadResult, err := ModifyUser(openID, cancel, p, level)
+	if err != nil {
+		log.Println(errors.WithStack(err).Error())
+		w.Write([]byte("fail"))
 		return
 	}
 
-	recordStr := getResultMap.Data["record"]
-	recordMap := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(fmt.Sprintf("%v", recordStr)), &recordMap); err != nil {
-		log.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	resultData, _ := json.Marshal(getResultMap.Data)
-	fmt.Printf("当前数据: %s\n", string(resultData))
-
-	// 修改用户数据
-	ChangeResult(recordMap, p, level, cancel)
-
-	recordMap["sign"] = SignDataMap(recordMap)
-	recordJsonStr, _ := json.Marshal(recordMap)
-
-	reqMap := make(map[string]interface{})
-	reqMap["plat"] = "wx"
-	reqMap["record"] = string(recordJsonStr)
-	reqMap["time"] = time.Now().UnixNano() / 1e6
-	reqMap["openid"] = openID
-	reqMap["wx_appid"] = appId
-	reqMap["wx_secret"] = secret
-	reqMap["sign"] = SignMap(reqMap)
-
-	delete(reqMap, "wx_appid")
-	delete(reqMap, "wx_secret")
-	reqData, _ := json.Marshal(reqMap)
-
-	fmt.Printf("修改后: %s\n", string(reqData))
-
-	uploadResult := new(RespData)
-	if err := PostWxGame("/api/archive/upload", reqData, uploadResult); err != nil {
-		log.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
 	if uploadResult.Code == 0 {
 		fmt.Println("更新用户信息成功")
 		w.Write([]byte("success"))
