@@ -1,5 +1,7 @@
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/fvbock/endless v0.0.0-20170109170031-447134032cb6 h1:6VSn3hB5U5GeA6kQw4TwWIWbOhtvR2hmbBJnTOtqTWc=
+github.com/fvbock/endless v0.0.0-20170109170031-447134032cb6/go.mod h1:YxOVT5+yHzKvwhsiSIWmbAYM3Dr9AEEbER2dVayfBkg=
 github.com/gin-contrib/sse v0.0.0-20190226023149-996076df5b33 h1:0KW+RBLmpRfNdJOo/l4MUpMt5G2v5+U2y2jfaQ2DyrI=
 github.com/gin-contrib/sse v0.0.0-20190226023149-996076df5b33/go.mod h1:VJ0WA2NBN22VlZ2dKZQPAPnyWw5XTlK1KymzLKsr59s=
 github.com/gin-gonic/gin v1.3.0 h1:kCmZyPklC0gVdL728E6Aj20uYBJV93nj/TkwBTKhFbs=
