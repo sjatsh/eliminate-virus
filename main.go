@@ -48,6 +48,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	pStr := r.Form.Get("p")
 	levelStr := r.Form.Get("l")
 	spReq := r.Form.Get("sp")
+	cancel := r.Form.Get("c")
 	if spReq != sp {
 		w.Write([]byte("签名错误"))
 		return
@@ -114,28 +115,60 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Printf("%v", recordMap)
+
 	switch p {
 	//套餐1: 主武器满级+金币收益满级18元
 	case 1:
+		if "1" == cancel {
+			recordMap["lDamage"] = 1
+			recordMap["lCount"] = 1
+			recordMap["lJiaZhi"] = 1
+			recordMap["lRiChang"] = 1
+			break
+		}
 		recordMap["lDamage"] = 999
 		recordMap["lCount"] = 356
 		recordMap["lJiaZhi"] = 999
 		recordMap["lRiChang"] = 999
 	case 2:
 		// 套餐2: 七个副武器满级打包30元
+		if "1" == cancel {
+			recordMap["levelFuCount"] = "[1,1,1,1,1,1,1,1,1,1]"
+			recordMap["levelFuDamage"] = "[1,1,1,1,1,1,1,1,1,1]"
+			break
+		}
 		recordMap["levelFuCount"] = "[32,32,32,32,32,32,32,1,1,1]"
 		recordMap["levelFuDamage"] = "[999,999,999,999,999,999,999,1,1,1]"
 	case 3:
 		// 套餐3: 无限体力18元
+		if "1" == cancel {
+			recordMap["tiLi"] = 0
+			break
+		}
 		recordMap["tiLi"] = 999 * m
 	case 4:
 		// 套餐4: 无线钻石18元（需要自己一个个兑换金币）
+		if "1" == cancel {
+			recordMap["zuanShi"] = 0
+			break
+		}
 		recordMap["zuanShi"] = 999999999 * m
 	case 5:
 		// 套餐5: 无限金币24元（武器全部升级满级用不完）
+		if "1" == cancel {
+			recordMap["money"] = fmt.Sprintf("%d", 0)
+			break
+		}
 		recordMap["money"] = fmt.Sprintf("%d", 999999999*m)
 	case 6:
 		// 套餐5: 无限金币、钻石、体力（可以自己升级体验游戏乐趣）
+		if "1" == cancel {
+			recordMap["money"] = fmt.Sprintf("%d", 0)
+			recordMap["zuanShi"] = 0
+			recordMap["tiLi"] = 0
+			break
+		}
 		recordMap["money"] = fmt.Sprintf("%d", 999999999*m)
 		recordMap["zuanShi"] = 999999999 * m
 		recordMap["tiLi"] = 999 * m
@@ -149,6 +182,18 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// 套餐8: 任意调整关卡等级, 5元
 	case 8:
 		recordMap["level"] = level
+	case 9:
+		// 清空所有数据
+		recordMap["lDamage"] = 1
+		recordMap["lCount"] = 1
+		recordMap["lJiaZhi"] = 1
+		recordMap["lRiChang"] = 1
+		recordMap["levelFuCount"] = "[1,1,1,1,1,1,1,1,1,1]"
+		recordMap["levelFuDamage"] = "[1,1,1,1,1,1,1,1,1,1]"
+		recordMap["level"] = 1
+		recordMap["money"] = fmt.Sprintf("%d", 0)
+		recordMap["zuanShi"] = 0
+		recordMap["tiLi"] = 0
 	default:
 		log.Println("请选择正确的套餐")
 	}
@@ -170,8 +215,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	delete(reqMap, "wx_appid")
 	delete(reqMap, "wx_secret")
 	reqData, _ := json.Marshal(reqMap)
-
-	fmt.Println(string(reqData))
 
 	uploadResult := new(RespData)
 	if err := PostWxGame("/api/archive/upload", reqData, uploadResult); err != nil {
