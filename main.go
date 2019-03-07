@@ -115,7 +115,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("%v", recordMap)
+	resultData, _ := json.Marshal(getResultMap.Data)
+	fmt.Printf("当前数据: %s\n", string(resultData))
 
 	switch p {
 	//套餐1: 主武器满级+金币收益满级18元
@@ -134,12 +135,12 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	case 2:
 		// 套餐2: 七个副武器满级打包30元
 		if "1" == cancel {
-			recordMap["levelFuCount"] = "[1,1,1,1,1,1,1,1,1,1]"
-			recordMap["levelFuDamage"] = "[1,1,1,1,1,1,1,1,1,1]"
+			recordMap["levelFuCount"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+			recordMap["levelFuDamage"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 			break
 		}
-		recordMap["levelFuCount"] = "[32,32,32,32,32,32,32,1,1,1]"
-		recordMap["levelFuDamage"] = "[999,999,999,999,999,999,999,1,1,1]"
+		recordMap["levelFuCount"] = []int{32, 32, 32, 32, 32, 32, 32, 1, 1, 1}
+		recordMap["levelFuDamage"] = []int{999, 999, 999, 999, 999, 999, 999, 1, 1, 1}
 	case 3:
 		// 套餐3: 无限体力18元
 		if "1" == cancel {
@@ -176,8 +177,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// 套餐7: 武器、副武器、关卡等级清至1级, 8元
 		recordMap["lDamage"] = 1
 		recordMap["lCount"] = 1
-		recordMap["levelFuCount"] = "[1,1,1,1,1,1,1,1,1,1]"
-		recordMap["levelFuDamage"] = "[1,1,1,1,1,1,1,1,1,1]"
+		recordMap["levelFuCount"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+		recordMap["levelFuDamage"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 		recordMap["level"] = 1
 	// 套餐8: 任意调整关卡等级, 5元
 	case 8:
@@ -188,8 +189,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		recordMap["lCount"] = 1
 		recordMap["lJiaZhi"] = 1
 		recordMap["lRiChang"] = 1
-		recordMap["levelFuCount"] = "[1,1,1,1,1,1,1,1,1,1]"
-		recordMap["levelFuDamage"] = "[1,1,1,1,1,1,1,1,1,1]"
+		recordMap["levelFuCount"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+		recordMap["levelFuDamage"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 		recordMap["level"] = 1
 		recordMap["money"] = fmt.Sprintf("%d", 0)
 		recordMap["zuanShi"] = 0
@@ -200,8 +201,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	recordMap["sign"] = SignDataMap(recordMap)
 	recordJsonStr, _ := json.Marshal(recordMap)
-
-	fmt.Println(string(recordJsonStr))
 
 	reqMap := make(map[string]interface{})
 	reqMap["plat"] = "wx"
@@ -215,6 +214,8 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	delete(reqMap, "wx_appid")
 	delete(reqMap, "wx_secret")
 	reqData, _ := json.Marshal(reqMap)
+
+	fmt.Printf("修改后: %s\n", string(reqData))
 
 	uploadResult := new(RespData)
 	if err := PostWxGame("/api/archive/upload", reqData, uploadResult); err != nil {
