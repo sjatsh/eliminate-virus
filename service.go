@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"time"
 )
+
+var sp = "xuehua5201314"
 
 func ModifyUser(openID, cancel string, p, level int64) (*RespData, error) {
 

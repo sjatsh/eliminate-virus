@@ -2,76 +2,51 @@ package main
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
+	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 var m int64 = 999999999999999999
 
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
+type Request struct {
+	ID       string `form:"id" binding:"required"` // 用户id
+	Package  int64  `form:"p" binding:"required"`  // 套餐种类
+	Password string `form:"sp" binding:"required"` // 用户密码
+	Level    int64  `form:"l"`                     // 关卡等级
+	Cancel   string `form:"c"`                     // 取消相应套餐
+}
 
-	if err := r.ParseForm(); err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
-	var err error
-	var p int64
-	var level int64
+type Response struct {
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
+}
 
-	openID := r.Form.Get("id")
-	pStr := r.Form.Get("p")
-	levelStr := r.Form.Get("l")
-	spReq := r.Form.Get("sp")
-	cancel := r.Form.Get("c")
-	if spReq != sp {
-		w.Write([]byte("签名错误"))
-		return
-	}
+func UploadHandler(c *gin.Context) {
 
-	if pStr != "" {
-		p, err = strconv.ParseInt(pStr, 10, 64)
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			return
-		}
-		if p <= 0 {
-			w.Write([]byte("请选择对应套餐"))
-			return
-		}
-	}
+	resp := new(Response)
+	defer c.JSON(http.StatusOK, resp)
 
-	if levelStr != "" {
-		level, err = strconv.ParseInt(levelStr, 10, 64)
-		if err != nil {
-			w.Write([]byte(err.Error()))
-			return
-		}
-	}
-
-	if "" == openID {
-		w.Write([]byte("请填写用户id"))
-		return
-	}
-	if 8 == p && level <= 0 {
-		w.Write([]byte("请填写关卡等级"))
+	req := new(Request)
+	if err := c.ShouldBind(req); err != nil {
+		resp.Code = -1
+		resp.Msg = err.Error()
 		return
 	}
 
-	uploadResult, err := ModifyUser(openID, cancel, p, level)
+	uploadResult, err := ModifyUser(req.ID, req.Cancel, req.Package, req.Level)
 	if err != nil {
-		log.Println(errors.WithStack(err).Error())
-		w.Write([]byte("fail"))
+		resp.Code = -1
+		resp.Msg = err.Error()
 		return
 	}
+	resp.Code = uploadResult.Code
 
 	if uploadResult.Code == 0 {
-		fmt.Println("更新用户信息成功")
-		w.Write([]byte("success"))
+		resp.Data = "更新用户信息成功"
 	} else {
-		fmt.Printf("刷新数据失败,%v", uploadResult)
-		w.Write([]byte(fmt.Sprintf("%v", uploadResult)))
+		resp.Msg = fmt.Sprintf("刷新数据失败,%v", uploadResult)
 	}
 }
 
