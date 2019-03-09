@@ -67,14 +67,14 @@ func ChangeResult(recordMap map[string]interface{}, p, level int64, cancel strin
 		recordMap["lJiaZhi"] = 999
 		recordMap["lRiChang"] = 999
 	case 2:
-		// 套餐2: 七个副武器满级打包30元
+		// 套餐2: 10个副武器满级打包30元
 		if "1" == cancel {
 			recordMap["levelFuCount"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 			recordMap["levelFuDamage"] = []int{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
 			break
 		}
-		recordMap["levelFuCount"] = []int{32, 32, 32, 32, 32, 32, 32, 1, 1, 1}
-		recordMap["levelFuDamage"] = []int{999, 999, 999, 999, 999, 999, 999, 1, 1, 1}
+		recordMap["levelFuCount"] = []int{32, 32, 32, 32, 32, 32, 32, 32, 32, 32}
+		recordMap["levelFuDamage"] = []int{999, 999, 999, 999, 999, 999, 999, 999, 999, 999}
 	case 3:
 		// 套餐3: 无限体力18元
 		if "1" == cancel {
